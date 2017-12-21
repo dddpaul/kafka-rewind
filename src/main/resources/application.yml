@@ -1,0 +1,10 @@
+application:
+  kafka:
+   -
+    partition: TOPIC-0
+    offset: 2
+    timestamp:
+   -
+    partition: TOPIC-1
+    offset: 2
+    timestamp:
