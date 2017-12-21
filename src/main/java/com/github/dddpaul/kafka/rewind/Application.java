@@ -11,17 +11,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * See https://jeqo.github.io/post/2017-01-31-kafka-rewind-consumers-offset/
+ * <p>
+ * --servers=kafka:9092 --id=group --topic=topic --offset=0:2017-12-21 --offset=1:2017-12-21 --offset=2:2017-12-21
  */
 @SpringBootApplication
 @Slf4j
@@ -29,26 +30,31 @@ public class Application implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
+        boolean flag = true;
+
         Properties props = new Properties();
-        props.put("bootstrap.servers", "kafka:9092");
-        props.put("group.id", "group2");
+        props.put("bootstrap.servers", args.getOptionValues("servers").get(0));
+        props.put("group.id", args.getOptionValues("id").get(0));
         props.put("auto.offset.reset", "earliest");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        boolean flag = true;
 
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList("topic"));
+        String topic = args.getOptionValues("topic").get(0);
+        List<String> offsets = args.getOptionValues("offset");
+
+        Map<TopicPartition, Long> query = offsets.stream()
+                .map(s -> s.split(":"))
+                .collect(toMap(
+                        e -> new TopicPartition(topic, Integer.parseInt(e[0])),
+                        e -> LocalDate.parse(e[1]).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+
+        KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props);
+        consumer.subscribe(Collections.singletonList(topic));
 
         while (true) {
-            ConsumerRecords<String, String> records = consumer.poll(3000);
+            ConsumerRecords<Object, Object> records = consumer.poll(3000);
 
             if (flag) {
-                Map<TopicPartition, Long> query = new HashMap<>();
-                query.put(
-                        new TopicPartition("topic", 0),
-                        Instant.now().minus(9, MINUTES).toEpochMilli());
-
                 Map<TopicPartition, OffsetAndTimestamp> result = consumer.offsetsForTimes(query);
                 result.forEach((key, value) -> consumer.seek(key, value.offset()));
                 flag = false;
