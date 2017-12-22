@@ -43,6 +43,9 @@ public class Application {
     @Option(names = {"-c", "--consume"}, description = "Consume after seek")
     boolean consume = false;
 
+    @Option(names = {"-h", "--help"}, description = "Display a help message", usageHelp = true)
+    boolean help = false;
+
     public void start() {
         Map<String, Object> props = Map.of(
                 "bootstrap.servers", servers,
@@ -89,6 +92,11 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        CommandLine.populateCommand(new Application(), args).start();
+        Application app = CommandLine.populateCommand(new Application(), args);
+        if (app.help) {
+            CommandLine.usage(app, System.err);
+            return;
+        }
+        app.start();
     }
 }
