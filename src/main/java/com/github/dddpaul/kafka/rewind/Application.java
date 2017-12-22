@@ -67,6 +67,7 @@ public class Application implements ApplicationRunner {
             }
 
             if (!consume) {
+                consumer.commitSync();
                 break;
             }
 
