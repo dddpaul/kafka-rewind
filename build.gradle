@@ -1,48 +1,53 @@
-import com.bmuschko.gradle.docker.tasks.image.*
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 
 buildscript {
-	repositories {
-		jcenter()
-		mavenCentral()
-	}
-	dependencies {
-		classpath 'com.bmuschko:gradle-docker-plugin:3.0.11'
-	}
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.bmuschko:gradle-docker-plugin:3.0.11'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.2'
+    }
 }
 
 apply plugin: 'java'
+apply plugin: 'application'
 apply plugin: 'com.bmuschko.docker-remote-api'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 group = 'com.github.dddpaul.kafka'
 version = '0.0.1-SNAPSHOT'
+mainClassName = 'com.github.dddpaul.kafka.rewind.Application'
 sourceCompatibility = 1.9
 
 repositories {
-	jcenter()
-	mavenCentral()
+    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-	compile 'info.picocli:picocli:2.2.0'
-	compile 'org.slf4j:slf4j-simple:1.7.25'
-	compile 'org.apache.kafka:kafka-clients:0.11.0.2'
+    compile 'info.picocli:picocli:2.2.0'
+    compile 'org.slf4j:slf4j-simple:1.7.25'
+    compile 'org.apache.kafka:kafka-clients:0.11.0.2'
 }
 
 task wrapper(type: Wrapper) {
-	gradleVersion = '4.1'
-	distributionUrl = 'https://services.gradle.org/distributions/gradle-4.2.1-all.zip'
+    gradleVersion = '4.1'
+    distributionUrl = 'https://services.gradle.org/distributions/gradle-4.2.1-all.zip'
 }
 
 task createDockerfile(type: Dockerfile) {
-	dependsOn build
-	destFile = project.file("${project.buildDir}/Dockerfile")
-	from 'anapsix/alpine-java:9'
-	addFile "libs/${project.name}-${project.version}.jar", '/app.jar'
-	entryPoint 'java', '-Djava.security.egd=file:/dev/./urandom', '-jar', '/app.jar'
+    dependsOn build
+    destFile = project.file("${project.buildDir}/Dockerfile")
+    from 'anapsix/alpine-java:9'
+    addFile "libs/${project.name}-${project.version}-all.jar", '/app.jar'
+    entryPoint 'java', '-Djava.security.egd=file:/dev/./urandom', '-jar', '/app.jar'
 }
 
 task buildDockerImage(type: DockerBuildImage) {
-	dependsOn createDockerfile
-	inputDir = createDockerfile.destFile.parentFile
-	tag = "dddpaul/${project.name}"
+    dependsOn createDockerfile
+    inputDir = createDockerfile.destFile.parentFile
+    tag = "dddpaul/${project.name}"
 }
