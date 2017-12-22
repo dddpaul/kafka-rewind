@@ -32,12 +32,14 @@ public class Application implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         boolean flag = true;
 
-        Properties props = new Properties();
-        props.put("bootstrap.servers", args.getOptionValues("servers").get(0));
-        props.put("group.id", args.getOptionValues("id").get(0));
-        props.put("auto.offset.reset", "earliest");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        Map<String, Object> props = Map.of(
+                "bootstrap.servers", args.getOptionValues("servers").get(0),
+                "group.id", args.getOptionValues("id").get(0),
+                "auto.offset.reset", "earliest",
+                "key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer",
+                "value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"
+
+        );
 
         String topic = args.getOptionValues("topic").get(0);
         List<String> offsets = args.getOptionValues("offset");

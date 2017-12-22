@@ -17,7 +17,7 @@ apply plugin: 'org.springframework.boot'
 
 group = 'com.github.dddpaul.kafka'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = 1.8
+sourceCompatibility = 1.9
 
 repositories {
 	mavenCentral()
@@ -29,4 +29,9 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter')
 	compileOnly('org.projectlombok:lombok')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+task wrapper(type: Wrapper) {
+	gradleVersion = '4.1'
+	distributionUrl = 'https://services.gradle.org/distributions/gradle-4.2.1-all.zip'
 }
