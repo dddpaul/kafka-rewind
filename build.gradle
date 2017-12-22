@@ -27,7 +27,6 @@ dependencies {
 	compile('org.springframework.kafka:spring-kafka')
 	compile("org.springframework.kafka:spring-kafka:${springKafkaVersion}")
 	compile('org.springframework.boot:spring-boot-starter')
-	compileOnly('org.projectlombok:lombok')
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 
