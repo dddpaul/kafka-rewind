@@ -6,10 +6,8 @@ import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
+import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
@@ -17,7 +15,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
@@ -27,31 +24,40 @@ import static java.util.stream.Collectors.toMap;
  * <p>
  * --servers=kafka:9092 --id=group --topic=topic --offset=0:2017-12-21 --offset=1:2017-12-21 --consume
  */
-@SpringBootApplication
-public class Application implements ApplicationRunner {
+public class Application {
 
     private static Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    @Override
-    public void run(ApplicationArguments args) {
+    @Option(names = {"-s", "--servers"}, description = "Comma-delimited list of Kafka brokers")
+    String servers = "localhost:9092";
+
+    @Option(names = {"-g", "--group-id"}, description = "Consumer group ID", required = true)
+    String groupId;
+
+    @Option(names = {"-t", "--topic"}, description = "Topic name", required = true)
+    String topic;
+
+    @Option(names = {"-o", "--offset"}, description = "Partition to offset map", required = true)
+    Map<String, LocalDate> offsets;
+
+    @Option(names = {"-c", "--consume"}, description = "Consume after seek")
+    boolean consume = false;
+
+    public void start() {
         Map<String, Object> props = Map.of(
-                "bootstrap.servers", args.getOptionValues("servers").get(0),
-                "group.id", args.getOptionValues("id").get(0),
+                "bootstrap.servers", servers,
+                "group.id", groupId,
                 "auto.offset.reset", "earliest",
                 "key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer",
                 "value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"
         );
 
-        String topic = args.getOptionValues("topic").get(0);
-        List<String> offsets = args.getOptionValues("offset");
-        boolean consume = args.containsOption("consume");
         boolean seek = true;
 
-        Map<TopicPartition, Long> partitionsTimestamps = offsets.stream()
-                .map(s -> s.split(":"))
+        Map<TopicPartition, Long> partitionsTimestamps = offsets.entrySet().stream()
                 .collect(toMap(
-                        e -> new TopicPartition(topic, Integer.parseInt(e[0])),
-                        e -> LocalDate.parse(e[1]).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+                        e -> new TopicPartition(topic, Integer.valueOf(e.getKey())),
+                        e -> e.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()));
 
         KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
@@ -83,9 +89,6 @@ public class Application implements ApplicationRunner {
     }
 
     public static void main(String[] args) {
-        new SpringApplicationBuilder()
-                .sources(Application.class)
-                .web(false)
-                .run(args);
+        CommandLine.populateCommand(new Application(), args).start();
     }
 }
