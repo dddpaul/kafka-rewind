@@ -75,7 +75,8 @@ public class Application implements ApplicationRunner {
                         Instant.ofEpochMilli(r.timestamp()),
                         ZoneId.systemDefault()
                 );
-                log.info("Timestamp: {}, record: {}", timestamp, r);
+                System.out.println(String.format("Timestamp: %s, partition: %s, value: %s",
+                        timestamp, new TopicPartition(topic, r.partition()), r.value()));
             });
         }
     }
