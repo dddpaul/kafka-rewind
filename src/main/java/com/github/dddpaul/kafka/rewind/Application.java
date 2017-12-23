@@ -48,6 +48,9 @@ public class Application {
     @Option(names = {"-v", "--value-deserializer"}, description = "Consumer value deserializer")
     String valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
 
+    @Option(names = {"-p", "--poll-timeout"}, description = "Consumer poll timeout, ms")
+    long timeout = 3000;
+
     @Option(names = {"-h", "--help"}, description = "Display a help message", usageHelp = true)
     boolean help = false;
 
@@ -65,13 +68,16 @@ public class Application {
         Map<TopicPartition, Long> partitionsTimestamps = offsets.entrySet().stream()
                 .collect(toMap(
                         e -> new TopicPartition(topic, Integer.valueOf(e.getKey())),
-                        e -> e.getValue().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()));
+                        e -> e.getValue()
+                                .atStartOfDay(ZoneId.systemDefault())
+                                .toInstant()
+                                .toEpochMilli()));
 
         KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
 
         while (true) {
-            ConsumerRecords<Object, Object> records = consumer.poll(3000);
+            ConsumerRecords<Object, Object> records = consumer.poll(timeout);
 
             if (seek) {
                 Map<TopicPartition, OffsetAndTimestamp> partitionsOffsets = consumer.offsetsForTimes(partitionsTimestamps);
