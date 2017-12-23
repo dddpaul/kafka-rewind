@@ -20,9 +20,8 @@ import java.util.Map;
 import static java.util.stream.Collectors.toMap;
 
 /**
+ * Kafka consumer offset rewind tool
  * See https://jeqo.github.io/post/2017-01-31-kafka-rewind-consumers-offset/
- * <p>
- * --servers=kafka:9092 --id=group --topic=topic --offset=0:2017-12-21 --offset=1:2017-12-21 --consume
  */
 public class Application {
 
@@ -43,6 +42,12 @@ public class Application {
     @Option(names = {"-c", "--consume"}, description = "Consume after seek")
     boolean consume = false;
 
+    @Option(names = {"-k", "--key-deserializer"}, description = "Consumer key deserializer")
+    String keyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+
+    @Option(names = {"-v", "--value-deserializer"}, description = "Consumer value deserializer")
+    String valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+
     @Option(names = {"-h", "--help"}, description = "Display a help message", usageHelp = true)
     boolean help = false;
 
@@ -50,9 +55,9 @@ public class Application {
         Map<String, Object> props = Map.of(
                 "bootstrap.servers", servers,
                 "group.id", groupId,
-                "auto.offset.reset", "earliest",
-                "key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer",
-                "value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"
+                "key.deserializer", keyDeserializer,
+                "value.deserializer", valueDeserializer,
+                "auto.offset.reset", "earliest"
         );
 
         boolean seek = true;
