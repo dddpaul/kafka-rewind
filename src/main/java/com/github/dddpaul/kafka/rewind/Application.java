@@ -60,7 +60,8 @@ public class Application {
                 "group.id", groupId,
                 "key.deserializer", keyDeserializer,
                 "value.deserializer", valueDeserializer,
-                "auto.offset.reset", "earliest"
+                "auto.offset.reset", "earliest",
+                "enable.auto.commit", "false"
         );
 
         boolean seek = true;
@@ -76,12 +77,14 @@ public class Application {
         KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
 
-        while (true) {
+        while (!Thread.interrupted()) {
             ConsumerRecords<Object, Object> records = consumer.poll(timeout);
 
             if (seek) {
                 Map<TopicPartition, OffsetAndTimestamp> partitionsOffsets = consumer.offsetsForTimes(partitionsTimestamps);
-                partitionsOffsets.forEach((key, value) -> consumer.seek(key, value.offset()));
+                partitionsOffsets.forEach((key, value) ->
+                        consumer.seek(key,
+                                value.offset()));
                 seek = false;
                 log.info("Seek to {}", partitionsOffsets);
             }
@@ -99,7 +102,11 @@ public class Application {
                 System.out.println(String.format("Timestamp: %s, partition: %s, value: %s",
                         timestamp, new TopicPartition(topic, r.partition()), r.value()));
             });
+
+            consumer.commitSync();
         }
+
+        consumer.close();
     }
 
     public static void main(String[] args) {

@@ -39,6 +39,7 @@ dependencies {
     testCompile 'com.github.charithe:kafka-junit:4.1.0'
     testCompile 'org.assertj:assertj-core:3.8.0'
     testCompile 'org.apiguardian:apiguardian-api:1.0.0'
+    testCompile 'org.apache.commons:commons-configuration2:2.2'
 }
 
 task wrapper(type: Wrapper) {
