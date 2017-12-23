@@ -22,6 +22,10 @@ version = '0.0.1-SNAPSHOT'
 mainClassName = 'com.github.dddpaul.kafka.rewind.Application'
 sourceCompatibility = 1.9
 
+ext {
+    dockerPrefix = "dddpaul"
+}
+
 repositories {
     jcenter()
     mavenCentral()
@@ -39,7 +43,7 @@ task wrapper(type: Wrapper) {
 }
 
 task createDockerfile(type: Dockerfile) {
-    dependsOn build
+    dependsOn shadowJar
     destFile = project.file("${project.buildDir}/Dockerfile")
     from 'anapsix/alpine-java:9'
     addFile "libs/${project.name}-${project.version}-all.jar", '/app.jar'
@@ -49,5 +53,5 @@ task createDockerfile(type: Dockerfile) {
 task buildDockerImage(type: DockerBuildImage) {
     dependsOn createDockerfile
     inputDir = createDockerfile.destFile.parentFile
-    tag = "dddpaul/${project.name}"
+    tag = "${dockerPrefix}/${project.name}:${project.version}"
 }
