@@ -1,5 +1,6 @@
 package com.github.dddpaul.kafka.rewind;
 
+import io.vavr.control.Try;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
@@ -29,7 +30,7 @@ public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static volatile boolean isRunning = true;
-    private static final CountDownLatch latch = new CountDownLatch(1);
+    private static CountDownLatch latch;
 
     @Option(names = {"-s", "--servers"}, description = "Comma-delimited list of Kafka brokers")
     private String servers = "localhost:9092";
@@ -114,19 +115,17 @@ public class Application {
     }
 
     public static void main(String[] args) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            isRunning = false;
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }));
         Application app = CommandLine.populateCommand(new Application(), args);
         if (app.help) {
             CommandLine.usage(app, System.err);
             return;
         }
+
+        latch = new CountDownLatch(1);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            isRunning = false;
+            Try.run(latch::await).orElseRun(Throwable::printStackTrace);
+        }));
         app.start();
     }
 }
