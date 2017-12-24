@@ -111,7 +111,9 @@ public class Application {
                 consumer.commitSync();
             }
         }
-        latch.countDown();
+        if (latch != null) {
+            latch.countDown();
+        }
     }
 
     public static void main(String[] args) {
