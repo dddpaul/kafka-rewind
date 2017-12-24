@@ -58,5 +58,8 @@ task createDockerfile(type: Dockerfile) {
 task buildDockerImage(type: DockerBuildImage) {
     dependsOn createDockerfile
     inputDir = createDockerfile.destFile.parentFile
-    tag = "${dockerPrefix}/${project.name}:${project.version}"
+    tags = [
+            "${dockerPrefix}/${project.name}".toString(),
+            "${dockerPrefix}/${project.name}:${project.version}".toString()
+    ]
 }

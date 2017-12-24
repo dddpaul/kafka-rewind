@@ -56,7 +56,7 @@ class ApplicationTest {
                 "--offset=0=2017-12-30").start();
 
         // then with the same group id
-        records = kafkaHelper.consume(TOPIC, kafkaHelper.createStringConsumer(PROPS), 5).get();
+        records = kafkaHelper.consume(TOPIC, kafkaHelper.createStringConsumer(PROPS), 0).get();
         assertThat(records).isEmpty();
     }
 }

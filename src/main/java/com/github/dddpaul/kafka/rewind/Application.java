@@ -16,43 +16,47 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import static java.util.stream.Collectors.toMap;
 
 /**
  * Kafka consumer offset rewind tool
+ * If timestamp is in future - do nothing
  * See https://jeqo.github.io/post/2017-01-31-kafka-rewind-consumers-offset/
  */
 public class Application {
 
-    private static Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    private static volatile boolean isRunning = true;
+    private static final CountDownLatch latch = new CountDownLatch(1);
 
     @Option(names = {"-s", "--servers"}, description = "Comma-delimited list of Kafka brokers")
-    String servers = "localhost:9092";
+    private String servers = "localhost:9092";
 
     @Option(names = {"-g", "--group-id"}, description = "Consumer group ID", required = true)
-    String groupId;
+    private String groupId;
 
     @Option(names = {"-t", "--topic"}, description = "Topic name", required = true)
-    String topic;
+    private String topic;
 
-    @Option(names = {"-o", "--offset"}, description = "Partition to offset map", required = true)
-    Map<String, LocalDate> offsets;
+    @Option(names = {"-o", "--offset"}, description = "Partition to timestamp map", required = true)
+    private Map<String, LocalDate> offsets;
 
     @Option(names = {"-c", "--consume"}, description = "Consume after seek")
-    boolean consume = false;
+    private boolean consume = false;
 
     @Option(names = {"-k", "--key-deserializer"}, description = "Consumer key deserializer")
-    String keyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+    private String keyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
 
     @Option(names = {"-v", "--value-deserializer"}, description = "Consumer value deserializer")
-    String valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+    private String valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
 
     @Option(names = {"-p", "--poll-timeout"}, description = "Consumer poll timeout, ms")
-    long timeout = 3000;
+    private long timeout = 3000;
 
     @Option(names = {"-h", "--help"}, description = "Display a help message", usageHelp = true)
-    boolean help = false;
+    private boolean help = false;
 
     public void start() {
         Map<String, Object> props = Map.of(
@@ -74,42 +78,50 @@ public class Application {
                                 .toInstant()
                                 .toEpochMilli()));
 
-        KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList(topic));
+        try (KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props)) {
+            consumer.subscribe(Collections.singletonList(topic));
 
-        while (!Thread.interrupted()) {
-            ConsumerRecords<Object, Object> records = consumer.poll(timeout);
+            while (isRunning && !Thread.interrupted()) {
+                ConsumerRecords<Object, Object> records = consumer.poll(timeout);
 
-            if (seek) {
-                Map<TopicPartition, OffsetAndTimestamp> partitionsOffsets = consumer.offsetsForTimes(partitionsTimestamps);
-                partitionsOffsets.forEach((key, value) ->
-                        consumer.seek(key,
-                                value.offset()));
-                seek = false;
-                log.info("Seek to {}", partitionsOffsets);
-            }
+                if (seek) {
+                    Map<TopicPartition, OffsetAndTimestamp> partitionsOffsets = consumer.offsetsForTimes(partitionsTimestamps);
+                    partitionsOffsets.entrySet().stream()
+                            .filter(e -> e.getValue() != null)
+                            .forEach(e -> consumer.seek(e.getKey(), e.getValue().offset()));
+                    seek = false;
+                    log.info("Seek to {}", partitionsOffsets);
+                }
 
-            if (!consume) {
+                if (!consume) {
+                    consumer.commitSync();
+                    break;
+                }
+
+                records.forEach(r -> {
+                    LocalDateTime timestamp = LocalDateTime.ofInstant(
+                            Instant.ofEpochMilli(r.timestamp()),
+                            ZoneId.systemDefault()
+                    );
+                    System.out.println(String.format("Timestamp: %s, partition: %s, value: %s",
+                            timestamp, new TopicPartition(topic, r.partition()), r.value()));
+                });
+
                 consumer.commitSync();
-                break;
             }
-
-            records.forEach(r -> {
-                LocalDateTime timestamp = LocalDateTime.ofInstant(
-                        Instant.ofEpochMilli(r.timestamp()),
-                        ZoneId.systemDefault()
-                );
-                System.out.println(String.format("Timestamp: %s, partition: %s, value: %s",
-                        timestamp, new TopicPartition(topic, r.partition()), r.value()));
-            });
-
-            consumer.commitSync();
         }
-
-        consumer.close();
+        latch.countDown();
     }
 
     public static void main(String[] args) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            isRunning = false;
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }));
         Application app = CommandLine.populateCommand(new Application(), args);
         if (app.help) {
             CommandLine.usage(app, System.err);
