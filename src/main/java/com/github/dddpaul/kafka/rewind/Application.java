@@ -84,14 +84,14 @@ public class Application {
 
             while (isRunning && !Thread.interrupted()) {
                 ConsumerRecords<Object, Object> records = consumer.poll(timeout);
+                Map<TopicPartition, OffsetAndTimestamp> offsetsAndTimestamps = consumer.offsetsForTimes(partitionsTimestamps);
 
                 if (seek) {
-                    Map<TopicPartition, OffsetAndTimestamp> partitionsOffsets = consumer.offsetsForTimes(partitionsTimestamps);
-                    partitionsOffsets.entrySet().stream()
+                    offsetsAndTimestamps.entrySet().stream()
                             .filter(e -> e.getValue() != null)
                             .forEach(e -> consumer.seek(e.getKey(), e.getValue().offset()));
                     seek = false;
-                    log.info("Seek to {}", partitionsOffsets);
+                    log.info("Seek to {}", offsetsAndTimestamps);
                 }
 
                 if (!consume) {
