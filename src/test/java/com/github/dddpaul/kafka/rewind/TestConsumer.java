@@ -13,26 +13,26 @@ public class TestConsumer<K, V> implements Callable<List<ConsumerRecord<K, V>>> 
 
     private final KafkaConsumer<K, V> consumer;
     private final String topic;
-    private final int numRecordsToPoll;
+    private final int recordsToPoll;
 
-    TestConsumer(KafkaConsumer<K, V> consumer, String topic, int numRecordsToPoll) {
+    TestConsumer(KafkaConsumer<K, V> consumer, String topic, int recordsToPoll) {
         this.consumer = consumer;
         this.topic = topic;
-        this.numRecordsToPoll = numRecordsToPoll;
+        this.recordsToPoll = recordsToPoll;
     }
 
     @Override
     public List<ConsumerRecord<K, V>> call() throws InterruptedException {
         consumer.subscribe(Collections.singletonList(topic));
-        List<ConsumerRecord<K, V>> result = new ArrayList<>(numRecordsToPoll);
+        List<ConsumerRecord<K, V>> result = new ArrayList<>(recordsToPoll);
         int i = 0;
         try {
-            while ((i < numRecordsToPoll) && (!Thread.currentThread().isInterrupted())) {
+            while ((i < recordsToPoll) && (!Thread.currentThread().isInterrupted())) {
                 ConsumerRecords<K, V> records = consumer.poll(0);
                 i++;
                 for (ConsumerRecord<K, V> r : records) {
                     result.add(r);
-                    if (i >= numRecordsToPoll) {
+                    if (i >= recordsToPoll) {
                         break;
                     }
                 }
