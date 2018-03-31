@@ -1,36 +1,27 @@
 package com.github.dddpaul.kafka.rewind;
 
 import io.vavr.control.Try;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
-import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
 import java.lang.invoke.MethodHandles;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import static java.util.stream.Collectors.toMap;
-
 /**
- * Kafka consumer offset rewind tool
+ * Kafka simpleConsumer offset rewind tool
  * If timestamp is in future - do nothing
  * See https://jeqo.github.io/post/2017-01-31-kafka-rewind-consumers-offset/
  */
 public class Application {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-    private static volatile boolean isRunning = true;
     private static CountDownLatch latch;
+    private static SimpleConsumer simpleConsumer;
 
     @Option(names = {"-s", "--servers"}, description = "Comma-delimited list of Kafka brokers")
     private String servers = "localhost:9092";
@@ -69,48 +60,18 @@ public class Application {
                 "enable.auto.commit", "false"
         );
 
-        boolean seek = true;
-
-        Map<TopicPartition, Long> partitionsTimestamps = offsets.entrySet().stream()
-                .collect(toMap(
-                        e -> new TopicPartition(topic, Integer.valueOf(e.getKey())),
-                        e -> e.getValue()
-                                .atStartOfDay(ZoneId.systemDefault())
-                                .toInstant()
-                                .toEpochMilli()));
 
         try (KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props)) {
-            consumer.subscribe(Collections.singletonList(topic));
+            new Seeker(consumer, topic, offsets, timeout).start();
+        }
 
-            while (isRunning && !Thread.interrupted()) {
-                ConsumerRecords<Object, Object> records = consumer.poll(timeout);
-                Map<TopicPartition, OffsetAndTimestamp> offsetsAndTimestamps = consumer.offsetsForTimes(partitionsTimestamps);
-
-                if (seek) {
-                    offsetsAndTimestamps.entrySet().stream()
-                            .filter(e -> e.getValue() != null)
-                            .forEach(e -> consumer.seek(e.getKey(), e.getValue().offset()));
-                    seek = false;
-                    log.info("Seek to {}", offsetsAndTimestamps);
-                }
-
-                if (!consume) {
-                    consumer.commitSync();
-                    break;
-                }
-
-                records.forEach(r -> {
-                    LocalDateTime timestamp = LocalDateTime.ofInstant(
-                            Instant.ofEpochMilli(r.timestamp()),
-                            ZoneId.systemDefault()
-                    );
-                    System.out.println(String.format("Timestamp: %s, partition: %s, value: %s",
-                            timestamp, new TopicPartition(topic, r.partition()), r.value()));
-                });
-
-                consumer.commitSync();
+        if (consume) {
+            try (KafkaConsumer<Object, Object> consumer = new KafkaConsumer<>(props)) {
+                simpleConsumer = new SimpleConsumer(consumer, topic, timeout);
+                simpleConsumer.start();
             }
         }
+
         if (latch != null) {
             latch.countDown();
         }
@@ -125,7 +86,9 @@ public class Application {
 
         latch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            isRunning = false;
+            if (simpleConsumer != null) {
+                simpleConsumer.stop();
+            }
             Try.run(latch::await).orElseRun(Throwable::printStackTrace);
         }));
         app.start();
