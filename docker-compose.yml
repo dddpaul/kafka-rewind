@@ -3,7 +3,7 @@ version: "2"
 services:
 
   zookeeper:
-    image: confluent/zookeeper
+    image: confluentinc/cp-zookeeper
     ports:
       - "2181:2181"
     environment:
@@ -11,7 +11,7 @@ services:
     network_mode: "host"
 
   kafka:
-    image: confluent/kafka
+    image: confluentinc/cp-kafka
     depends_on:
       - zookeeper
     ports:
@@ -21,7 +21,7 @@ services:
     network_mode: "host"
 
   schema-registry:
-    image: confluent/schema-registry
+    image: confluentinc/cp-schema-registry
     depends_on:
       - kafka
       - zookeeper
@@ -32,7 +32,7 @@ services:
     network_mode: "host"
 
   rest-proxy:
-    image: confluent/rest-proxy
+    image: confluentinc/cp-kafka-rest
     depends_on:
       - zookeeper
       - kafka
@@ -41,7 +41,7 @@ services:
       - "8082:8082"
     environment:
       RP_ZOOKEEPER_CONNECT: "zookeeper:2181"
-      RP_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      RP_SCHEMA_REGISTRY_URL: "http://kafka-rest:8081"
     network_mode: "host"
 
   kafka-manager:
@@ -59,5 +59,5 @@ services:
     ports:
       - "9001:8000"
     environment:
-      KAFKA_REST_PROXY_URL: "http://rest-proxy:8082"
+      KAFKA_REST_PROXY_URL: "http://kafka-rest:8082"
       PROXY: "true"
