@@ -45,5 +45,5 @@ allprojects {
 }
 
 dependencies {
-    compile project(':rewind-core')
+    compile project(':core')
 }

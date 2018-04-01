@@ -20,7 +20,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 mainClassName = 'com.github.dddpaul.kafka.rewind.cli.Application'
 
 dependencies {
-    compile project(':rewind-core')
+    compile project(':core')
     testCompile 'com.github.charithe:kafka-junit:4.1.0'
     testCompile 'org.assertj:assertj-core:3.8.0'
     testCompile 'org.apiguardian:apiguardian-api:1.0.0'
@@ -39,7 +39,7 @@ task buildDockerImage(type: DockerBuildImage) {
     dependsOn createDockerfile
     inputDir = createDockerfile.destFile.parentFile
     tags = [
-            "${dockerPrefix}/${project.name}".toString(),
-            "${dockerPrefix}/${project.name}:${project.version}".toString()
+            "${dockerPrefix}/${rootProject.name}-${project.name}".toString(),
+            "${dockerPrefix}/${rootProject.name}-${project.name}:${project.version}".toString()
     ]
 }
