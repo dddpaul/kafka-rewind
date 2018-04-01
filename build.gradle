@@ -3,6 +3,11 @@ buildscript {
         jcenter()
         mavenCentral()
     }
+    dependencies {
+        classpath 'com.bmuschko:gradle-docker-plugin:3.2.6'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.3'
+        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.2'
+    }
 }
 
 apply plugin: 'application'
@@ -10,7 +15,6 @@ apply plugin: 'application'
 allprojects {
     group = 'com.github.dddpaul.kafka'
     version = '0.0.2-SNAPSHOT'
-    mainClassName = 'com.github.dddpaul.kafka.rewind.Application'
     sourceCompatibility = 1.10
 
     apply plugin: 'java'
@@ -25,8 +29,18 @@ allprojects {
     }
 
     task wrapper(type: Wrapper) {
-        gradleVersion = '4.5.1'
-        distributionUrl = 'https://services.gradle.org/distributions/gradle-4.5.1-all.zip'
+        gradleVersion = '4.6'
+        distributionUrl = 'https://services.gradle.org/distributions/gradle-4.6-all.zip'
+    }
+
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.1.0'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.1.0'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.1.0'
+    }
+
+    test {
+        useJUnitPlatform()
     }
 }
 

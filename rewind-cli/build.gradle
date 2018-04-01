@@ -17,6 +17,8 @@ apply plugin: 'application'
 apply plugin: 'com.bmuschko.docker-remote-api'
 apply plugin: 'com.github.johnrengelman.shadow'
 
+mainClassName = 'com.github.dddpaul.kafka.rewind.cli.Application'
+
 dependencies {
     compile project(':rewind-core')
     testCompile 'com.github.charithe:kafka-junit:4.1.0'
