@@ -1,22 +1,11 @@
-import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
-import com.bmuschko.gradle.docker.tasks.image.Dockerfile
-
 buildscript {
     repositories {
         jcenter()
         mavenCentral()
     }
-    dependencies {
-        classpath 'com.bmuschko:gradle-docker-plugin:3.2.6'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.3'
-        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.2'
-    }
 }
 
 apply plugin: 'application'
-apply plugin: 'com.bmuschko.docker-remote-api'
-apply plugin: 'com.github.johnrengelman.shadow'
-
 
 allprojects {
     group = 'com.github.dddpaul.kafka'
@@ -42,26 +31,5 @@ allprojects {
 }
 
 dependencies {
-    compile project(':core')
-    testCompile 'com.github.charithe:kafka-junit:4.1.0'
-    testCompile 'org.assertj:assertj-core:3.8.0'
-    testCompile 'org.apiguardian:apiguardian-api:1.0.0'
-    testCompile 'org.apache.commons:commons-configuration2:2.2'
-}
-
-task createDockerfile(type: Dockerfile) {
-    dependsOn shadowJar
-    destFile = project.file("${project.buildDir}/Dockerfile")
-    from 'openjdk:10-jre'
-    addFile "libs/${project.name}-${project.version}-all.jar", '/app.jar'
-    entryPoint 'java', '-Djava.security.egd=file:/dev/./urandom', '-jar', '/app.jar'
-}
-
-task buildDockerImage(type: DockerBuildImage) {
-    dependsOn createDockerfile
-    inputDir = createDockerfile.destFile.parentFile
-    tags = [
-            "${dockerPrefix}/${project.name}".toString(),
-            "${dockerPrefix}/${project.name}:${project.version}".toString()
-    ]
+    compile project(':rewind-core')
 }
