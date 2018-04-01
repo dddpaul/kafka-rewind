@@ -1,4 +1,4 @@
-package com.github.dddpaul.kafka.rewind;
+package com.github.dddpaul.kafka.rewind.consumers;
 
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;

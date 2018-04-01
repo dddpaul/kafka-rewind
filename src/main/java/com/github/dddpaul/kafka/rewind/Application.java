@@ -1,5 +1,7 @@
 package com.github.dddpaul.kafka.rewind;
 
+import com.github.dddpaul.kafka.rewind.consumers.Seeker;
+import com.github.dddpaul.kafka.rewind.consumers.SimpleConsumer;
 import io.vavr.control.Try;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.slf4j.Logger;
