@@ -22,7 +22,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   kafka-manager:
-    image: sheepkiller/kafka-manager:1.3.1.8
+    image: dddpaul/kafka-manager:1.3.3.17
     depends_on:
       - zookeeper
       - kafka
