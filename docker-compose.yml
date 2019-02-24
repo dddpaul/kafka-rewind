@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 services:
 
@@ -22,7 +22,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   kafka-manager:
-    image: dddpaul/kafka-manager:1.3.3.17
+    image: dddpaul/kafka-manager:1.3.3.22
     depends_on:
       - zookeeper
       - kafka
@@ -30,6 +30,15 @@ services:
       - 9000:9000
     environment:
       ZK_HOSTS: zookeeper:2181
+    command:
+      - "kafka-manager-1.3.3.22/bin/kafka-manager"
+      - "-J-XX:+PrintGCDetails"
+      - "-J-XX:+PrintGCDateStamps"
+      - "-J-XX:+HeapDumpOnOutOfMemoryError"
+      - "-Dapplication.features.0=KMClusterManagerFeature"
+      - "-Dapplication.features.1=KMTopicManagerFeature"
+      - "-Dapplication.features.2=KMPreferredReplicaElectionFeature"
+      - "-Dapplication.features.3=KMReassignPartitionsFeature"
 
   kafka-rest:
     image: confluentinc/cp-kafka-rest:4.0.0-3
