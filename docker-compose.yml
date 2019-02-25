@@ -32,9 +32,12 @@ services:
       ZK_HOSTS: zookeeper:2181
     command:
       - "kafka-manager-1.3.3.22/bin/kafka-manager"
+      - "-J-XX:+PrintCommandLineFlags"
       - "-J-XX:+PrintGCDetails"
       - "-J-XX:+PrintGCDateStamps"
       - "-J-XX:+HeapDumpOnOutOfMemoryError"
+      - "-J-XX:+UseConcMarkSweepGC"
+      - "-J-XX:+UseParNewGC"
       - "-Dapplication.features.0=KMClusterManagerFeature"
       - "-Dapplication.features.1=KMTopicManagerFeature"
       - "-Dapplication.features.2=KMPreferredReplicaElectionFeature"
