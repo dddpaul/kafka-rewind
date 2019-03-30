@@ -30,7 +30,7 @@ dependencies {
 task createDockerfile(type: Dockerfile) {
     dependsOn shadowJar
     destFile = project.file("${project.buildDir}/Dockerfile")
-    from 'openjdk:10-jre'
+    from 'bellsoft/liberica-openjdk-alpine-musl:11.0.2'
     addFile "libs/${project.name}-${project.version}-all.jar", '/app.jar'
     entryPoint 'java', '-Djava.security.egd=file:/dev/./urandom', '-jar', '/app.jar'
 }
